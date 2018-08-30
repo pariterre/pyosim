@@ -3,12 +3,14 @@ import json
 import shutil
 
 from pyogui import FieldsAssignment
-from project_conf import PROJECT_PATH, LOCAL_DATA_PARENT_PATH, CONF_TEMPLATE, LOCAL_MVC_PARENT_PATH, DATA_PARENT_PATH, MVC_PARENT_PATH, BASE_PROJECT_DISTANT
+from project_conf import PROJECT_PATH, CONF_TEMPLATE, LOCAL_DATA_PARENT_PATH, LOCAL_MVC_PARENT_PATH, \
+    DATA_PARENT_PATH, MVC_PARENT_PATH, BASE_PROJECT_DISTANT
 from pyosim import Conf, Project
 
 # ACTUAL PARTICIPANT TO PROCESS #
-participant_to_do=5
-debug='false'
+participant_to_do = 5
+debug = 'false'
+run_analyses_on_distant_computer = False
 distant_ip = 'ec2-34-212-104-202.us-west-2.compute.amazonaws.com'
 pem_file_path = '~/.ssh/bimec29-kinesio.pem'
 #################################
@@ -80,24 +82,30 @@ trials_distant = f'{DATA_PARENT_PATH}/IRSST_{pseudo_in_path}d/'
 score_distant = f'{DATA_PARENT_PATH}/IRSST_{pseudo_in_path}d/'
 mvc_distant = f'{MVC_PARENT_PATH}/'
 
-# CHANGE PATHS SO THE DISTANT JSON HAS A VALID FILE
-filename = conf.get_conf_path(actual_participant)
-file = open(filename, 'r')
-data = json.load(file)
-file.close()
-data['conf_file'] = [f'{BASE_PROJECT_DISTANT}results/{actual_participant}/_conf.json/']
-data['emg']['data'] = [f'{trials_distant}trials/', f'{mvc_distant}{pseudo_in_path}/']
-data['analogs']['data'] = [f'{trials_distant}trials/']
-data['markers']['data'] = [f'{trials_distant}trials/', f'{score_distant}MODEL2/']
+if run_analyses_on_distant_computer:
+    # CHANGE PATHS SO THE DISTANT JSON HAS A VALID FILE
+    filename = conf.get_conf_path(actual_participant)
+    file = open(filename, 'r')
+    data = json.load(file)
+    file.close()
+    data['conf_file'] = [f'{BASE_PROJECT_DISTANT}results/{actual_participant}/_conf.json/']
+    data['emg']['data'] = [f'{trials_distant}trials/', f'{mvc_distant}{pseudo_in_path}/']
+    data['analogs']['data'] = [f'{trials_distant}trials/']
+    data['markers']['data'] = [f'{trials_distant}trials/', f'{score_distant}MODEL2/']
 
-# data.update(d)
-file = open(filename, 'w+')
-json.dump(data, file)
-file.close()
+    # data.update(d)
+    file = open(filename, 'w+')
+    json.dump(data, file)
+    file.close()
 
-# Do the same for the other conf file
-conf.project_conf.loc[participant_to_do, 'conf_file'] = f"{BASE_PROJECT_DISTANT}results/{actual_participant}/_conf.json"
-conf.project_conf.to_csv(conf.conf_path, index=False)
+    # Do the same for the other conf file
+    conf.project_conf.loc[participant_to_do, 'conf_file'] = \
+        f"{BASE_PROJECT_DISTANT}results/{actual_participant}/_conf.json"
+    conf.project_conf.to_csv(conf.conf_path, index=False)
 
-# Call the script that does the interface with distant computer
-os.system(f"./ceinms_runner.sh {trials_local} {score_local} {mvc_local} {trials_distant} {score_distant} {mvc_distant} {distant_ip} {pem_file_path} {BASE_PROJECT_DISTANT} log_{actual_participant}.log {debug}")
+    # Call the script that does the interface with distant computer
+    os.system(f"./ceinms_runner.sh {trials_local} {score_local} {mvc_local} {trials_distant} {score_distant} "
+              f"{mvc_distant} {distant_ip} {pem_file_path} {BASE_PROJECT_DISTANT} log_{actual_participant}.log {debug}")
+else:
+    os.system(f"cp -r _models results")
+    os.system(f"cp -r _templates results")

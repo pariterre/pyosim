@@ -253,7 +253,7 @@ class AnalyzeTool:
         out = {}
         for t in root.findall(f'.//{node}/*'):
             if t.text == 'true' or t.text == 'false':
-                out.update({t.tag: bool(t.text)})
+                out.update({t.tag: t.text == 'true'})
             elif isfloat(t.text):
                 out.update({t.tag: float(t.text)})
             else:

@@ -231,49 +231,49 @@
                 </IKMarkerTask>
 
 
-                <IKMarkerTask name="avant_droit">
+                <IKMarkerTask name="boite_avant_droit">
                     <!--Whether or not this task will be used during inverse kinematics solve.-->
                     <apply>true</apply>
                     <!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->
                     <weight>1</weight>
                 </IKMarkerTask>
-                <IKMarkerTask name="avant_gauche">
+                <IKMarkerTask name="boite_avant_gauche">
                     <!--Whether or not this task will be used during inverse kinematics solve.-->
                     <apply>true</apply>
                     <!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->
                     <weight>1</weight>
                 </IKMarkerTask>
-                <IKMarkerTask name="arriere_droit">
+                <IKMarkerTask name="boite_arriere_droit">
                     <!--Whether or not this task will be used during inverse kinematics solve.-->
                     <apply>true</apply>
                     <!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->
                     <weight>1</weight>
                 </IKMarkerTask>
-                <IKMarkerTask name="arriere_gauche">
+                <IKMarkerTask name="boite_arriere_gauche">
                     <!--Whether or not this task will be used during inverse kinematics solve.-->
                     <apply>true</apply>
                     <!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->
                     <weight>1</weight>
                 </IKMarkerTask>
-                <IKMarkerTask name="gauche_int">
+                <IKMarkerTask name="boite_gauche_int">
                     <!--Whether or not this task will be used during inverse kinematics solve.-->
                     <apply>true</apply>
                     <!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->
                     <weight>1</weight>
                 </IKMarkerTask>
-                <IKMarkerTask name="gauche_ext">
+                <IKMarkerTask name="boite_gauche_ext">
                     <!--Whether or not this task will be used during inverse kinematics solve.-->
                     <apply>true</apply>
                     <!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->
                     <weight>1</weight>
                 </IKMarkerTask>
-                <IKMarkerTask name="droite_int">
+                <IKMarkerTask name="boite_droite_int">
                     <!--Whether or not this task will be used during inverse kinematics solve.-->
                     <apply>true</apply>
                     <!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->
                     <weight>1</weight>
                 </IKMarkerTask>
-                <IKMarkerTask name="droite_ext">
+                <IKMarkerTask name="boite_droite_ext">
                     <!--Whether or not this task will be used during inverse kinematics solve.-->
                     <apply>true</apply>
                     <!--Weight given to a marker or coordinate for solving inverse kinematics problems.-->

@@ -320,7 +320,7 @@
 		<MarkerSet>
 			<objects>
 
-				<Marker name="avant_droit">
+				<Marker name="boite_avant_droit">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The frame to which this station is fixed.).-->
 					<socket_parent_frame_connectee_name>../box</socket_parent_frame_connectee_name>
 					<!--The fixed location of the station expressed in its parent frame.-->
@@ -328,7 +328,7 @@
 					<!--Flag (true or false) specifying whether the marker is fixed in its parent frame during the marker placement step of scaling.  If false, the marker is free to move within its parent Frame to match its experimental counterpart.-->
 					<fixed>true</fixed>
 				</Marker>
-				<Marker name="avant_gauche">
+				<Marker name="boite_avant_gauche">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The frame to which this station is fixed.).-->
 					<socket_parent_frame_connectee_name>../box</socket_parent_frame_connectee_name>
 					<!--The fixed location of the station expressed in its parent frame.-->
@@ -336,7 +336,7 @@
 					<!--Flag (true or false) specifying whether the marker is fixed in its parent frame during the marker placement step of scaling.  If false, the marker is free to move within its parent Frame to match its experimental counterpart.-->
 					<fixed>true</fixed>
 				</Marker>
-				<Marker name="arriere_droit">
+				<Marker name="boite_arriere_droit">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The frame to which this station is fixed.).-->
 					<socket_parent_frame_connectee_name>../box</socket_parent_frame_connectee_name>
 					<!--The fixed location of the station expressed in its parent frame.-->
@@ -344,7 +344,7 @@
 					<!--Flag (true or false) specifying whether the marker is fixed in its parent frame during the marker placement step of scaling.  If false, the marker is free to move within its parent Frame to match its experimental counterpart.-->
 					<fixed>true</fixed>
 				</Marker>
-				<Marker name="arriere_gauche">
+				<Marker name="boite_arriere_gauche">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The frame to which this station is fixed.).-->
 					<socket_parent_frame_connectee_name>../box</socket_parent_frame_connectee_name>
 					<!--The fixed location of the station expressed in its parent frame.-->
@@ -352,7 +352,7 @@
 					<!--Flag (true or false) specifying whether the marker is fixed in its parent frame during the marker placement step of scaling.  If false, the marker is free to move within its parent Frame to match its experimental counterpart.-->
 					<fixed>true</fixed>
 				</Marker>
-				<Marker name="gauche_int">
+				<Marker name="boite_gauche_int">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The frame to which this station is fixed.).-->
 					<socket_parent_frame_connectee_name>../box</socket_parent_frame_connectee_name>
 					<!--The fixed location of the station expressed in its parent frame.-->
@@ -360,7 +360,7 @@
 					<!--Flag (true or false) specifying whether the marker is fixed in its parent frame during the marker placement step of scaling.  If false, the marker is free to move within its parent Frame to match its experimental counterpart.-->
 					<fixed>true</fixed>
 				</Marker>
-				<Marker name="gauche_ext">
+				<Marker name="boite_gauche_ext">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The frame to which this station is fixed.).-->
 					<socket_parent_frame_connectee_name>../box</socket_parent_frame_connectee_name>
 					<!--The fixed location of the station expressed in its parent frame.-->
@@ -368,7 +368,7 @@
 					<!--Flag (true or false) specifying whether the marker is fixed in its parent frame during the marker placement step of scaling.  If false, the marker is free to move within its parent Frame to match its experimental counterpart.-->
 					<fixed>true</fixed>
 				</Marker>
-				<Marker name="droite_int">
+				<Marker name="boite_droite_int">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The frame to which this station is fixed.).-->
 					<socket_parent_frame_connectee_name>../box</socket_parent_frame_connectee_name>
 					<!--The fixed location of the station expressed in its parent frame.-->
@@ -376,7 +376,7 @@
 					<!--Flag (true or false) specifying whether the marker is fixed in its parent frame during the marker placement step of scaling.  If false, the marker is free to move within its parent Frame to match its experimental counterpart.-->
 					<fixed>true</fixed>
 				</Marker>
-				<Marker name="droite_ext">
+				<Marker name="boite_droite_ext">
 					<!--Path to a Component that satisfies the Socket 'parent_frame' of type PhysicalFrame (description: The frame to which this station is fixed.).-->
 					<socket_parent_frame_connectee_name>../box</socket_parent_frame_connectee_name>
 					<!--The fixed location of the station expressed in its parent frame.-->

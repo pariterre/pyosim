@@ -79,7 +79,9 @@ class Project:
             '2_inverse_dynamic',  # generated STO files from inverse dynamic
             '3_static_optimization',  # generated STO files from static optimization
             '4_muscle_analysis',  # generated STO files from muscle analysis
-            '5_joint_reaction_force'  # generated STO files from joint reaction force analysis
+            '5_joint_reaction_force',  # generated STO files from joint reaction force analysis
+            'temp_optim_wrap',  # Serve as temporary folder while performing the wrapping adjustment
+            'template_temp_optim_wrap'  # Serve as temporary folder while performing the wrapping adjustment
         ]
 
         count = 0

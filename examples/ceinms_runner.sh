@@ -38,7 +38,7 @@ distant_score_folder_address=$distant_user_name@$hostname:$distant_score_folder
 distant_mvc_folder_address=$distant_user_name@$hostname:$distant_mvc_folder
 
 # Get the script to run
-running_python_script=$9
+running_python_script_path=$9
 log_file=${10}
 
 # Print if needed
@@ -54,7 +54,7 @@ then
     echo "distant_data_folder_address = $distant_data_folder_address"
     echo "distant_score_folder_address = $distant_score_folder_address"
     echo "distant_mvc_folder_address = $distant_mvc_folder_address"
-    echo "running_python_script = $running_python_script"
+    echo "running_python_script_path = $running_python_script_path"
     echo "log_file = $log_file"
     echo "Done"
     echo ""
@@ -69,7 +69,7 @@ fi
 git_branch=ceinms
 git commit -am "Automatically generated commit..."
 git push origin $git_branch
-ssh -i $pem_file $distant_user_name@$hostname "cd $running_python_script; git pull origin $git_branch"
+ssh -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; git pull origin $git_branch"
 
 # Copy data from local
 echo "Copying local data and mvc to distant folder.."
@@ -84,32 +84,33 @@ echo "Done"
 echo ""
 
 # Do the analysis
+python_executable=/home/ubuntu/miniconda3/envs/CEINMS/bin/python3
 echo "Executing the analysis.."
 cp -r _models results/
 cp -r _templates results/
-scp -r -i $pem_file results $distant_user_name@$hostname:$running_python_script
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _1_markers.py" >> $log_file
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _2_emg.py" >> $log_file
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _3_forces.py" >> $log_file
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _4_scaling.py" >> $log_file
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _5_inverse_kinematics.py" >> $log_file
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _6_inverse_dynamics.py" >> $log_file
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _7_static_optimization.py" >> $log_file
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _8_muscle_analysis.py" >> $log_file
-ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script; /home/ubuntu/miniconda3/envs/CEINMS/bin/python3 _9_joint_reaction.py" >> $log_file
+scp -r -i $pem_file results $distant_user_name@$hostname:$running_python_script_path
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _1_markers.py" >> $log_file
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _2_emg.py" >> $log_file
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _3_forces.py" >> $log_file
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _4_scaling.py" >> $log_file
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _5_inverse_kinematics.py" >> $log_file
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _6_inverse_dynamics.py" >> $log_file
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _7_static_optimization.py" >> $log_file
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _8_muscle_analysis.py" >> $log_file
+ssh -X -i $pem_file $distant_user_name@$hostname "cd $running_python_script_path; $python_executable _9_joint_reaction.py" >> $log_file
 echo "Done"
 echo ""
 
 # Copy back the results
 mkdir final_results
-scp -r -i $pem_file $distant_user_name@$hostname:${running_python_script}results final_results
+scp -r -i $pem_file $distant_user_name@$hostname:${$running_python_script_path}results final_results
 
 # Delete distant data
 echo "Deleting distant data and mvc.."
 ssh -i $pem_file $distant_user_name@$hostname "rm -rf $distant_data_folder"
 ssh -i $pem_file $distant_user_name@$hostname "rm -rf $distant_score_folder"
 ssh -i $pem_file $distant_user_name@$hostname "rm -rf $distant_mvc_folder"
-ssh -i $pem_file $distant_user_name@$hostname "rm -rf $distant_user_name@$hostname:${running_python_script}results"
+ssh -i $pem_file $distant_user_name@$hostname "rm -rf $distant_user_name@$hostname:${$running_python_script_path}results"
 echo "Done"
 echo ""
 
