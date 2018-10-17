@@ -1,8 +1,10 @@
-import opensim as osim
 import numpy as np
 
+import opensim as osim
+import pygmo as pg
 from pyosim import MuscleAnalysis
 from pyomeca import Analogs3d
+
 from project_conf import MODELS_PATH, PROJECT_PATH, TEMPLATES_PATH
 
 # Optimization strategy
@@ -25,37 +27,51 @@ from project_conf import MODELS_PATH, PROJECT_PATH, TEMPLATES_PATH
 #   Load the muscle analysis results
 #   Find any discontinuities (velocity of muscle lengths > mean_rms * 10)
 
-
+#
 # NOTE : For some reason, in debug opensim writes its sto file comma decimal instead of point decimal...
 model = 'wu'
 subject = 'mars'
 
 template_model = f'{MODELS_PATH}/{model}.osim'
 subject_model = f'{PROJECT_PATH}/{subject}/_models/{model}_scaled.osim'
-mot_file = f'{model}_optimMotion.mot'
+# mot_file = f'{model}_optimMotion.mot'
+mot_file = f'{model}_MarSF12H1_2.mot'
+
+# Load osim files
+runningOpenSimModels = {}
+nb_population = 10
 
 
-def generate_motion(dofs, resolution=100):
-    # First time was in the hope to recursively call  the function do an exhaustive scan of the ranges of motion.
+def get_open_sim_model(prob):
+    if prob in runningOpenSimModels:
+        return runningOpenSimModels[prob][0], runningOpenSimModels[prob][1]
+    else:
+        runningOpenSimModels[prob] = [osim.Model(subject_model), get_open_sim_model.idx]
+        get_open_sim_model.idx += 1
+        return runningOpenSimModels[prob][0], runningOpenSimModels[prob][1]
+get_open_sim_model.idx = 0
+
+
+def generate_motion(resolution=100):
+    # At beginning, I was in the hope that I could recursively call the function in order to do an exhaustive scan
+    # of the ranges of motion.
     # Unless better idea comes, it raises an out of memory because the matrix is [resolution^len(dofs)] long
+    # The strategy now is to concatenate different gestures
 
-    # if first_time:
-    final_array = np.ndarray((resolution, len(dofs)+1))
-
-    final_array[:, 14] = np.linspace(0, np.pi/2, resolution)
-
-    # if first_time:
-    final_array[:, 0] = np.linspace(0, (resolution-1)/100, resolution)
+    final_array = np.ndarray((resolution, len(dofs) + 1))
+    final_array[:, 14] = np.linspace(0, np.pi / 2, resolution)
+    final_array[:, 0] = np.linspace(0, (resolution - 1) / 100, resolution)
     return final_array
 
 
-def generate_mot_file(path_to_save, data, dofs):
+def generate_mot_file(path_to_save, data):
     if len(dofs) != data.shape[1] - 1:  # -1 for the time column
         raise ValueError("Wrong number of dofs")
 
     # Prepare the header
     header = list()
-    header.append(f"Coordinates\nversion=1\nnRows={data.shape[0]}\nnColumns={data.shape[1]}\ninDegrees=no\nendheader\n")
+    header.append(f"Coordinates\nversion=1\nnRows={data.shape[0]}\n"
+                  f"nColumns={data.shape[1]}\ninDegrees=no\nendheader\n")
     header.append("time\t")
     for dof in dofs:
         header.append(f"{dof}\t")
@@ -65,105 +81,175 @@ def generate_mot_file(path_to_save, data, dofs):
     np.savetxt(path_to_save, data, delimiter='\t', header=header, comments='')
 
 
-def perform_muscle_analysis(path_model, output_path='temp_optim_wrap'):
-    global analyse_must_be_perform, data_of_the_subject
-    if analyse_must_be_perform:
-        path_kwargs = {
-            'model_input': path_model,
-            'xml_input': f"{(TEMPLATES_PATH / model).resolve()}_ma_optimWrap.xml",
-            'xml_output': f"{(PROJECT_PATH / subject / '_xml' / model).resolve()}_ma_optimWrap.xml",
-            'sto_output': f"{(PROJECT_PATH / subject / output_path).resolve()}",
-            'enforce_analysis': True
-        }
-
-        MuscleAnalysis(
-            **path_kwargs,
-            mot_files=f'{PROJECT_PATH}/{subject}/temp_optim_wrap/{mot_file}',
-            prefix=model,
-            low_pass=-1,
-            remove_empty_files=True,
-            multi=False
-        )
-        analyse_must_be_perform = False
-        data_of_the_subject = Analogs3d.from_csv(
-            f"{(PROJECT_PATH / subject / output_path / f'{mot_file[:-4]}_MuscleAnalysis_Length.sto').resolve()}",
-            delimiter='\t', time_column=0, header=9,
-            first_column=1, first_row=10).derivative().abs()[:, :, 1:-1]
-
-
-def continuous_muscle_constraint():
-    # Inequality constraint.
-    # If muscle length top 2% change in velocity is lower than mean_rms * 10, we assume all muscles are continuous
-    perform_muscle_analysis(subject_model)
-
-    mean_rms = np.mean(data_of_the_subject.rms())
-    return np.percentile(-1*data_of_the_subject, 2, axis=2) + mean_rms * 10
-
-
-def objective_function():
-    # MODIFY SUBJECT_MODEL : TODO
-    # osim_model.get_BodySet().get(0).get_WrapObjectSet().get(5).set
-
-    # Compute R²
-    perform_muscle_analysis(subject_model)
-    corrcoef = list()
-    for dof in range(data_of_the_subject.shape[1]):
-        coef = np.corrcoef(data_of_the_subject[0, dof, :], data_template[0, dof, :])[1, 0]
-        if np.isnan(coef):
-            val = 0
-        else:
-            val = 1 - coef * coef  # R^2
-        corrcoef.append(val)
-    return corrcoef
-
-
-# Load osim files
-osim_model = osim.Model(subject_model)
-
 # Generate a mot file which can create muscles discontinuity and get all degrees of freedom of the model
+osim_generic = osim.Model(subject_model)
 dofs = list()
-for i in range(osim_model.get_JointSet().getSize()):
-    for j in range(osim_model.get_JointSet().get(i).numCoordinates()):
-        dofs.append(osim_model.get_JointSet().get(i).get_coordinates(j).getName())
-generate_mot_file(f'{PROJECT_PATH}/{subject}/temp_optim_wrap/{mot_file}', generate_motion(dofs), dofs)
-
-# Do a first muscle analysis
-data_of_the_subject = Analogs3d(np.ndarray((0, 0)))
-analyse_must_be_perform = True
-perform_muscle_analysis(template_model, 'template_temp_optim_wrap')
-data_template = data_of_the_subject
-analyse_must_be_perform = True
-perform_muscle_analysis(subject_model)
-
-# Test constraint function
-print(objective_function())
-print(continuous_muscle_constraint())
+for i in range(osim_generic.get_JointSet().getSize()):
+    for j in range(osim_generic.get_JointSet().get(i).numCoordinates()):
+        dofs.append(osim_generic.get_JointSet().get(i).get_coordinates(j).getName())
+generate_mot_file(f'{PROJECT_PATH}/{subject}/temp_optim_wrap/{mot_file}', generate_motion())
 
 
+class WrapOptim:
+    def __init__(self):
+        self.osim_model = -1
+        self.output_path = ""
+        self.muscle_length_path = ""
 
-## ERREUR DE SEGMENT DÛ À MATPLOTLIB... VÉRIFIER POURQUOI..
+        # Do a first muscle analysis
+        self.data_of_the_subject = Analogs3d(np.ndarray((0, 0)))
+        self.data_template = Analogs3d(np.ndarray((0, 0)))
+        self.analyse_must_be_perform = True
+        self.initialSizes = []
+
+    def get_osim_model(self):
+        osim_model, idx = get_open_sim_model(self)
+        if self.osim_model != idx:
+            self.osim_model = idx
+            self.output_path = f'template_temp_optim_wrap_{self.osim_model}'
+            self.muscle_length_path = f"{(PROJECT_PATH / subject / self.output_path / f'{mot_file[:-4]}_MuscleAnalysis_Length.sto').resolve()}"
+
+            # Do a first muscle analysis
+            self.data_of_the_subject = Analogs3d(np.ndarray((0, 0)))
+            self.analyse_must_be_perform = True
+            self.perform_muscle_analysis_derivative(template_model)
+            self.data_template = self.data_of_the_subject
+            self.analyse_must_be_perform = True
+            self.perform_muscle_analysis_derivative(subject_model)
+
+            # Remember initial sizes
+            wrappings = self.get_wrappings()
+            self.initialSizes = np.array([wrappings[0].get_dimensions()[0], wrappings[0].get_dimensions()[1], wrappings[0].get_dimensions()[2]])
+        return osim_model
+
+    @staticmethod
+    def get_name():
+        return "Wu optim"
+
+    @staticmethod
+    def get_nobj():
+        return 29 + 3  # 29 muscles + 3 wrappings
+
+    @staticmethod
+    def get_nic():
+        return 29  # 29 muscles
+
+    @staticmethod
+    def get_bounds():
+        return np.zeros(3).tolist(), (np.ones(3)).tolist()
+
+    def get_wrappings(self):
+        # Get all the references to wrapping objects and return them into a list
+        e = osim.WrapEllipsoid.safeDownCast(self.get_osim_model().get_BodySet().get(0).get_WrapObjectSet().get(5))
+        return [e]
+
+    def set_wrappings(self, x):
+        # Get all the wrappings references
+        wrappings = self.get_wrappings()
+
+        # Fill them with x
+        wrappings[0].set_dimensions(0, osim.Vec3(x[0], x[1], x[2]))
+
+        # Remember that something was modified
+        self.analyse_must_be_perform = True
+
+    def perform_muscle_analysis_derivative(self, path_model):
+        if self.analyse_must_be_perform:
+            path_kwargs = {
+                'model_input': path_model,
+                'xml_input': f"{(TEMPLATES_PATH / model).resolve()}_ma_optimWrap.xml",
+                'xml_output': f"{(PROJECT_PATH / subject / '_xml' / model).resolve()}_ma_optimWrap.xml",
+                'sto_output': f"{(PROJECT_PATH / subject / self.output_path).resolve()}",
+                'enforce_analysis': True
+            }
+            MuscleAnalysis(
+                **path_kwargs,
+                # mot_files=f'{PROJECT_PATH}/{subject}/temp_optim_wrap/{mot_file}',
+                mot_files=f'{PROJECT_PATH}/{subject}/1_inverse_kinematic/{mot_file}',
+                prefix=model,
+                low_pass=-1,
+                remove_empty_files=True,
+                multi=False
+            )
+            self.analyse_must_be_perform = False
+
+            self.data_of_the_subject = \
+                Analogs3d.from_csv(self.muscle_length_path, delimiter='\t', time_column=0,
+                                   header=9, first_column=1, first_row=10).derivative().abs()[:, :, 1:-1]
+
+    def continuous_muscle_constraint(self):
+        # Inequality constraint.
+        # If muscle length top 2% change in velocity is lower than mean_rms * 10, we assume all muscles are continuous
+        self.perform_muscle_analysis_derivative(subject_model)
+
+        mean_rms = np.mean(self.data_of_the_subject.rms())
+        return np.percentile(self.data_of_the_subject, 99.9, axis=2) - mean_rms * 10
+
+    def fitness(self, x):
+        self.set_wrappings(x)
+
+        # Compute R² (first objective)
+        self.perform_muscle_analysis_derivative(subject_model)
+        corrcoef = list()
+        for dof in range(self.data_of_the_subject.shape[1]):
+            coef = np.corrcoef(self.data_of_the_subject[0, dof, :], self.data_template[0, dof, :])[1, 0]
+            if np.isnan(coef):
+                val = 0
+            else:
+                val = coef * coef  # (R^2)
+            corrcoef.append(val)
+
+        # Minimize change with original size
+        size_fitness = np.square(self.initialSizes - x).tolist()
+        print(self.initialSizes)
+        print(x)
+
+        # Inequality constraints
+        ineq_const = self.continuous_muscle_constraint()[0, :].tolist()
+
+        # Concat objective / equality / inequality
+        return corrcoef + size_fitness + ineq_const
 
 
+class WrapOptimSingleObjective(WrapOptim):
+    def __init__(self):
+        super().__init__()
 
-import pygmo as pg
+    def get_nobj(self):
+        return 1
 
-# 1 - Instantiate a pygmo problem constructing it from a UDP
-# (user defined problem).
-prob = pg.problem(pg.schwefel(30))
+    def fitness(self, x):
+        old_fitness = super().fitness(x)
+        final_fitness = 0
+        for idx in range(super().get_nobj()):
+            final_fitness += old_fitness[idx] * old_fitness[idx]
+        return [final_fitness] + old_fitness[super().get_nobj():]
 
-# 2 - Instantiate a pagmo algorithm
-algo = pg.algorithm(pg.sade(gen=100))
 
-# 3 - Instantiate an archipelago with 16 islands having each 20 individuals
-archi = pg.archipelago(16, algo=algo, prob=prob, pop_size=20)
+class WrapOptimSingleObjectiveUnconstraint(WrapOptim):
+    def __init__(self):
+        super().__init__()
+        self.constraint_penalty = 1000
 
-# 4 - Run the evolution in parallel on the 16 separate islands 10 times.
-archi.evolve(10)
+    def get_nobj(self):
+        return 1
 
-# 5 - Wait for the evolutions to be finished
-archi.wait()
+    def get_nic(self):
+        return 0
 
-# 6 - Print the fitness of the best solution in each island
-res = [isl.get_population().champion_f for isl in archi]
+    def fitness(self, x):
+        old_fitness = super().fitness(x)
+        final_fitness = 0
+        for idx in range(super().get_nobj()):
+            final_fitness += old_fitness[idx] * old_fitness[idx]
+        for idx in range(super().get_nic()):
+            if old_fitness[idx] > 0:
+                final_fitness += old_fitness[idx] * old_fitness[idx] * self.constraint_penalty
+        return [final_fitness]
 
-print(res)
+
+prob = pg.problem(WrapOptimSingleObjectiveUnconstraint())
+pop = pg.population(prob, size=nb_population)
+algo = pg.algorithm(uda=pg.pso(gen=50))
+pop = algo.evolve(pop)
+print(pop)
