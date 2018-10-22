@@ -2,7 +2,7 @@ import os
 import json
 import shutil
 
-from pyogui import FieldsAssignment
+from pyoviz import FieldsAssignment
 from project_conf import PROJECT_PATH, CONF_TEMPLATE, LOCAL_DATA_PARENT_PATH, LOCAL_MVC_PARENT_PATH, \
     DATA_PARENT_PATH, MVC_PARENT_PATH, BASE_PROJECT_DISTANT
 from pyosim import Conf, Project
