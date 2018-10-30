@@ -54,17 +54,3 @@ class Analogs3dOsim(Analogs3d):
 
         adapter = osim.STOFileAdapter()
         adapter.write(table, str(filename))
-
-    def from_mot(self, filename):
-        """
-        Read mot data and convert to Vectors3d format
-
-        Parameters
-        ----------
-        filename
-
-        Returns
-        -------
-
-        """
-        return self.from_csv(filename, header=8, first_column=1, delimiter='\t')
