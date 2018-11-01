@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import opensim as osim
 
-from pyomeca.obj.analogs import Analogs3d
+from pyomeca import Analogs3d
 
 
 class Analogs3dOsim(Analogs3d):

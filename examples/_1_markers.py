@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from pyosim import Conf
-from pyosim.obj import Markers3dOsim
+from pyosim import Markers3dOsim
 from project_conf import PROJECT_PATH
 
 conf = Conf(project_path=PROJECT_PATH)
