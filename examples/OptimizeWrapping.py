@@ -44,11 +44,27 @@ nb_population = 10
 
 def get_open_sim_model(prob):
     if prob in runningOpenSimModels:
-        return runningOpenSimModels[prob][0], runningOpenSimModels[prob][1]
+        return runningOpenSimModels[prob][0], runningOpenSimModels[prob][1], runningOpenSimModels[prob][2], runningOpenSimModels[prob][3], runningOpenSimModels[prob][4]
     else:
         runningOpenSimModels[prob] = [osim.Model(subject_model), get_open_sim_model.idx]
+        runningOpenSimModels[prob].append(runningOpenSimModels[prob][0].initSystem())
+
+        data_storage = osim.Storage(f'{PROJECT_PATH}/{subject}/1_inverse_kinematic/{mot_file}')
+
+        model = runningOpenSimModels[prob][0]
+        model.getSimbodyEngine().convertDegreesToRadians(data_storage)
+        data_storage.lowpassFIR(2, 6)
+        gen_coord_function = osim.GCVSplineSet(5, data_storage)
+        runningOpenSimModels[prob].append(list())
+        for frame in range(data_storage.getSize()):
+            q = list()
+            for idx_q in range(data_storage.getStateVector(frame).getSize()):
+                q.append(gen_coord_function.evaluate(idx_q, 0, data_storage.getStateVector(frame).getTime()))
+            runningOpenSimModels[prob][3].append(osim.Vector(q))
+        runningOpenSimModels[prob].append(np.linspace(data_storage.getFirstTime(), data_storage.getLastTime(), num=data_storage.getSize()))
+
         get_open_sim_model.idx += 1
-        return runningOpenSimModels[prob][0], runningOpenSimModels[prob][1]
+        return runningOpenSimModels[prob][0], runningOpenSimModels[prob][1], runningOpenSimModels[prob][2], runningOpenSimModels[prob][3], runningOpenSimModels[prob][4]
 get_open_sim_model.idx = 0
 
 
@@ -103,7 +119,7 @@ class WrapOptim:
         self.initialSizes = []
 
     def get_osim_model(self):
-        osim_model, idx = get_open_sim_model(self)
+        osim_model, idx, state, all_q, time_frames = get_open_sim_model(self)
         if self.osim_model != idx:
             self.osim_model = idx
             self.output_path = f'template_temp_optim_wrap_{self.osim_model}'
@@ -118,8 +134,34 @@ class WrapOptim:
             self.perform_muscle_analysis_derivative(subject_model)
 
             # Remember initial sizes
-            wrappings = self.get_wrappings()
-            self.initialSizes = np.array([wrappings[0].get_dimensions()[0], wrappings[0].get_dimensions()[1], wrappings[0].get_dimensions()[2]])
+            # Waitin opensim API to be ready
+            self.initialSizes = np.array([0.1, 0.1, 0.1])  # for now suppose only one wrap
+            # wraps = self.get_wrappings()
+            # for i in range(len(wraps)):
+            #     wrapEll = osim.WrapEllipsoid.safeDownCast(wraps[i])
+            #     if wrapEll:
+            #         pass
+            #         # Waiting for opensim api to be ready
+            #         # self.initialSizes.append(np.array(wrapEll.get_dimensions()))
+            #
+            #     wrapCyl = osim.WrapCylinder.safeDownCast(wraps[i])
+            #     if wrapCyl:
+            #         pass
+            #         # Waiting for opensim api to be ready
+            #         # self.initialSizes.append(np.array(wrapCyl.get_dimensions()))
+            #
+            #     wrapTor = osim.WrapTorus.safeDownCast(wraps[i])
+            #     if wrapTor:
+            #         pass
+            #         # Waiting for opensim api to be ready
+            #         # self.initialSizes.append(np.array(wrapTor.get_dimensions()))
+            #
+            #     wrapSphere = osim.WrapSphere.safeDownCast(wraps[i])
+            #     if wrapSphere:
+            #         pass
+            #         # Waiting for opensim api to be ready
+            #         # self.initialSizes.append(np.array(wrapSphere.get_dimensions()))
+
         return osim_model
 
     @staticmethod
@@ -140,42 +182,66 @@ class WrapOptim:
 
     def get_wrappings(self):
         # Get all the references to wrapping objects and return them into a list
-        e = osim.WrapEllipsoid.safeDownCast(self.get_osim_model().get_BodySet().get(0).get_WrapObjectSet().get(5))
-        return [e]
+        wraps = list()
+        bs = self.get_osim_model().get_BodySet()
+        for i in range(bs.getSize()):
+            w = bs.get(i).get_WrapObjectSet()
+            for j in range(w.getSize()):
+                wraps.append(w.get(j))
+
+        return wraps
 
     def set_wrappings(self, x):
         # Get all the wrappings references
         wrappings = self.get_wrappings()
 
         # Fill them with x
-        wrappings[0].set_dimensions(0, osim.Vec3(x[0], x[1], x[2]))
+        # Waiting for the API to be ready
+        wraps = self.get_wrappings()
+        for i in range(len(wraps)):
+            wrapEll = osim.WrapEllipsoid.safeDownCast(wraps[i])
+            if wrapEll:
+                pass
+                # Waiting for opensim api to be ready
+                # wrapEll.set_dimensions(x[3*i:3*i+2])
+
+            wrapCyl = osim.WrapCylinder.safeDownCast(wraps[i])
+            if wrapCyl:
+                pass
+                # Waiting for opensim api to be ready
+                # wrapCyl.set_dimensions(x[3*i:3*i+2])
+
+            wrapTor = osim.WrapTorus.safeDownCast(wraps[i])
+            if wrapTor:
+                pass
+                # Waiting for opensim api to be ready
+                # wrapTor.set_dimensions(x[3*i:3*i+2])
+
+            wrapSphere = osim.WrapSphere.safeDownCast(wraps[i])
+            if wrapSphere:
+                pass
+                # Waiting for opensim api to be ready
+                # wrapSphere.set_dimensions(x[3*i:3*i+2])
 
         # Remember that something was modified
         self.analyse_must_be_perform = True
 
     def perform_muscle_analysis_derivative(self, path_model):
         if self.analyse_must_be_perform:
-            path_kwargs = {
-                'model_input': path_model,
-                'xml_input': f"{(TEMPLATES_PATH / model).resolve()}_ma_optimWrap.xml",
-                'xml_output': f"{(PROJECT_PATH / subject / '_xml' / model).resolve()}_ma_optimWrap.xml",
-                'sto_output': f"{(PROJECT_PATH / subject / self.output_path).resolve()}",
-                'enforce_analysis': True
-            }
-            MuscleAnalysis(
-                **path_kwargs,
-                # mot_files=f'{PROJECT_PATH}/{subject}/temp_optim_wrap/{mot_file}',
-                mot_files=f'{PROJECT_PATH}/{subject}/1_inverse_kinematic/{mot_file}',
-                prefix=model,
-                low_pass=-1,
-                remove_empty_files=True,
-                multi=False
-            )
-            self.analyse_must_be_perform = False
+            model, idx, state, all_q, time_frames = get_open_sim_model(self)
 
-            self.data_of_the_subject = \
-                Analogs3d.from_csv(self.muscle_length_path, delimiter='\t', time_column=0,
-                                   header=9, first_column=1, first_row=10).derivative().abs()[:, :, 1:-1]
+            lengths = list()
+            for frame in all_q:
+                state.setQ(frame)
+                model.realizePosition(state)
+                model.equilibrateMuscles(state)
+                muscles = model.getMuscles()
+                lengths.append([muscles.get(m).getLength(state) for m in range(muscles.getSize())])
+                # muscles.get(0).computeMomentArm(state, corresponding_q)
+
+            a = Analogs3d(np.array(lengths))
+            a.get_time_frames = time_frames
+            self.data_of_the_subject = a.derivative().abs()[:, :, 1:-1]
 
     def continuous_muscle_constraint(self):
         # Inequality constraint.
